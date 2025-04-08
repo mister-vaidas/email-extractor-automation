@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
+.env
+venv/
+
+# Logs
+cron_log.txt
+logs/
+.txt
+.csv
+
+# IDE files
+.idea/
+.vscode/
+
+# Other
+backups/
