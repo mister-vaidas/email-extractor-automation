@@ -9,8 +9,8 @@ venv/
 # Logs
 cron_log.txt
 logs/
-.txt
-.csv
+*.txt
+*.csv
 
 # IDE files
 .idea/
