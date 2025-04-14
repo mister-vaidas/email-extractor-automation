@@ -18,3 +18,6 @@ logs/
 
 # Other
 backups/
+
+# Exceptions
+!requirements.txt

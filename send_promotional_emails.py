@@ -1,5 +1,7 @@
 import psycopg2
 import smtplib
+
+smtplib.SMTP.debuglevel = 1
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
@@ -10,21 +12,21 @@ from datetime import datetime
 load_dotenv()
 
 # PostgreSQL credentials
-DB_HOST = os.getenv('DB_HOST')
-DB_NAME = os.getenv('DB_NAME')
-DB_USER = os.getenv('DB_USER')
-DB_PASS = os.getenv('DB_PASS')
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
 
 # Email SMTP settings
-EMAIL_ACCOUNT = os.getenv('EMAIL_ACCOUNT')
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
-SMTP_SERVER = os.getenv('SMTP_SERVER')
-SMTP_PORT = int(os.getenv('SMTP_PORT'))
-REPORT_RECIPIENT = os.getenv('REPORT_RECIPIENT')
+EMAIL_ACCOUNT = os.getenv("EMAIL_ACCOUNT")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = int(os.getenv("SMTP_PORT"))
+REPORT_RECIPIENT = os.getenv("REPORT_RECIPIENT")
 
 # Test mode settings
-TEST_MODE = os.getenv('TEST_MODE', 'FALSE').upper() == 'TRUE'
-TEST_EMAIL = os.getenv('TEST_EMAIL')
+TEST_MODE = os.getenv("TEST_MODE", "FALSE").upper() == "TRUE"
+TEST_EMAIL = os.getenv("TEST_EMAIL")
 
 # Offer link (customize per campaign)
 OFFER_LINK = "https://yourwebsite.com/special-offer"
@@ -33,17 +35,16 @@ OFFER_LINK = "https://yourwebsite.com/special-offer"
 with open("email_template.html", "r") as file:
     EMAIL_TEMPLATE = file.read()
 
+
 def fetch_recipient_emails():
     if TEST_MODE:
         print("🚧 TEST MODE: Only sending to test email address.")
         return [TEST_EMAIL]
+        print(f"Recipients list: {recipients}")
 
     try:
         conn = psycopg2.connect(
-            host=DB_HOST,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASS
+            host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASS
         )
         cursor = conn.cursor()
 
@@ -67,26 +68,30 @@ def fetch_recipient_emails():
         print(f"Database error: {e}")
         return []
 
+
 def send_email(recipient, smtp_server):
     try:
         # Prepare unsubscribe link
-        unsubscribe_link = f"http://your-server-ip:5000/unsubscribe?email={recipient}"
+        unsubscribe_link = f"http://35.176.53.188:5000/unsubscribe?email={recipient}"
 
         # Personalize the template
-        html_content = EMAIL_TEMPLATE.replace("{{ unsubscribe_link }}", unsubscribe_link).replace("{{ offer_link }}", OFFER_LINK)
+        html_content = EMAIL_TEMPLATE.replace(
+            "{{ unsubscribe_link }}", unsubscribe_link
+        ).replace("{{ offer_link }}", OFFER_LINK)
 
-        msg = MIMEMultipart('alternative')
-        msg['From'] = EMAIL_ACCOUNT
-        msg['To'] = recipient
-        msg['Subject'] = "🎉 Monthly Special Offer Just for You!"
+        msg = MIMEMultipart("alternative")
+        msg["From"] = EMAIL_ACCOUNT
+        msg["To"] = recipient
+        msg["Subject"] = "🎉 Monthly Special Offer Just for You!"
 
-        msg.attach(MIMEText(html_content, 'html'))
+        msg.attach(MIMEText(html_content, "html"))
 
         smtp_server.send_message(msg)
         print(f"✅ Email sent to: {recipient}")
 
     except Exception as e:
         raise Exception(f"Failed to send email to {recipient}: {e}")
+
 
 def send_summary_email(total, success, failure, aborted=False, failed_recipients=None):
     subject = "📊 Campaign Summary Report"
@@ -96,7 +101,9 @@ def send_summary_email(total, success, failure, aborted=False, failed_recipients
 
     failed_list = ""
     if failed_recipients:
-        failed_list = "\n❌ Failed recipients:\n" + "\n".join(f"- {email}" for email in failed_recipients)
+        failed_list = "\n❌ Failed recipients:\n" + "\n".join(
+            f"- {email}" for email in failed_recipients
+        )
 
     body = f"""
 {status}
@@ -118,17 +125,17 @@ def send_summary_email(total, success, failure, aborted=False, failed_recipients
     try:
         with open(log_file_path, "a") as log_file:
             log_file.write(body)
-            log_file.write("\n" + "="*50 + "\n")
+            log_file.write("\n" + "=" * 50 + "\n")
         print("📝 Summary logged to cron_log.txt successfully!")
     except Exception as e:
         print(f"Failed to write summary to log file: {e}")
 
     # ✅ Step 2: Send summary email
     msg = MIMEMultipart()
-    msg['From'] = EMAIL_ACCOUNT
-    msg['To'] = REPORT_RECIPIENT
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
+    msg["From"] = EMAIL_ACCOUNT
+    msg["To"] = REPORT_RECIPIENT
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
 
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
@@ -141,6 +148,7 @@ def send_summary_email(total, success, failure, aborted=False, failed_recipients
     except Exception as e:
         print(f"Failed to send summary email: {e}")
 
+
 def main():
     recipients = fetch_recipient_emails()
     total_recipients = len(recipients)
@@ -152,7 +160,12 @@ def main():
 
     if not recipients:
         print("No recipients found.")
-        send_summary_email(total_recipients, success_count, failure_count, failed_recipients=failed_recipients)
+        send_summary_email(
+            total_recipients,
+            success_count,
+            failure_count,
+            failed_recipients=failed_recipients,
+        )
         return
 
     # Dry-run: Test mode
@@ -161,14 +174,31 @@ def main():
         for recipient in recipients:
             print(f"- {recipient}")
         print(f"Total: {total_recipients} emails would be sent.")
-        send_summary_email(total_recipients, success_count, failure_count, failed_recipients=failed_recipients)
+        send_summary_email(
+            total_recipients,
+            success_count,
+            failure_count,
+            failed_recipients=failed_recipients,
+        )
         return
 
     # Production mode confirmation
-    confirmation = input(f"⚠️ You are about to send emails to {total_recipients} real recipients. Are you sure? (yes/no): ").strip().lower()
-    if confirmation != 'yes':
+    confirmation = (
+        input(
+            f"⚠️ You are about to send emails to {total_recipients} real recipients. Are you sure? (yes/no): "
+        )
+        .strip()
+        .lower()
+    )
+    if confirmation != "yes":
         print("🚫 Sending aborted by user.")
-        send_summary_email(total_recipients, success_count, failure_count, aborted=True, failed_recipients=failed_recipients)
+        send_summary_email(
+            total_recipients,
+            success_count,
+            failure_count,
+            aborted=True,
+            failed_recipients=failed_recipients,
+        )
         return
 
     try:
@@ -193,7 +223,13 @@ def main():
         failed_recipients = recipients
 
     # Always send summary email
-    send_summary_email(total_recipients, success_count, failure_count, failed_recipients=failed_recipients)
+    send_summary_email(
+        total_recipients,
+        success_count,
+        failure_count,
+        failed_recipients=failed_recipients,
+    )
+
 
 if __name__ == "__main__":
     main()
