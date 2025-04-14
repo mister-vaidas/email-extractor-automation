@@ -1,0 +1,32 @@
+repos:
+  # Pre-commit meta tools
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=500']  # Optional: blocks large files >500KB
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: detect-private-key  # ✅ Detects private keys accidentally committed
+
+  # Python code formatting (optional, good practice)
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+
+  # Detect secrets in code (critical for sensitive data!)
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+
+  # Custom local hooks (our sensitive file blocker!)
+  - repo: local
+    hooks:
+      - id: block-sensitive-files
+        name: Block Sensitive Files
+        entry: hooks/pre-commit
+        language: script
+        files: .*
