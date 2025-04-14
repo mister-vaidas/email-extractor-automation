@@ -208,6 +208,7 @@ def main():
 
             for recipient in recipients:
                 try:
+                    print(f"📩 Sending promotional email to: {recipient}")
                     send_email(recipient, server)
                     success_count += 1
                 except Exception as e:
