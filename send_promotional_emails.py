@@ -38,9 +38,8 @@ with open("email_template.html", "r") as file:
 
 def fetch_recipient_emails():
     if TEST_MODE:
-        print("🚧 TEST MODE: Only sending to test email address.")
+        print("\U0001f6a7 TEST MODE: Only sending to test email address.")
         return [TEST_EMAIL]
-        print(f"Recipients list: {recipients}")
 
     try:
         conn = psycopg2.connect(
@@ -48,7 +47,6 @@ def fetch_recipient_emails():
         )
         cursor = conn.cursor()
 
-        # Get emails from personal and business tables, excluding unsubscribed
         query = """
         SELECT email FROM personal_emails
         WHERE email NOT IN (SELECT email FROM unsubscribe_emails)
@@ -71,10 +69,8 @@ def fetch_recipient_emails():
 
 def send_email(recipient, smtp_server):
     try:
-        # Prepare unsubscribe link
         unsubscribe_link = f"http://35.176.53.188:5000/unsubscribe?email={recipient}"
 
-        # Personalize the template
         html_content = EMAIL_TEMPLATE.replace(
             "{{ unsubscribe_link }}", unsubscribe_link
         ).replace("{{ offer_link }}", OFFER_LINK)
@@ -82,7 +78,7 @@ def send_email(recipient, smtp_server):
         msg = MIMEMultipart("alternative")
         msg["From"] = EMAIL_ACCOUNT
         msg["To"] = recipient
-        msg["Subject"] = "🎉 Monthly Special Offer Just for You!"
+        msg["Subject"] = "\U0001f389 Monthly Special Offer Just for You!"
 
         msg.attach(MIMEText(html_content, "html"))
 
@@ -94,10 +90,9 @@ def send_email(recipient, smtp_server):
 
 
 def send_summary_email(total, success, failure, aborted=False, failed_recipients=None):
-    subject = "📊 Campaign Summary Report"
-
+    subject = "\U0001f4ca Campaign Summary Report"
     mode = "TEST MODE" if TEST_MODE else "PRODUCTION MODE"
-    status = "🚫 Campaign aborted by user." if aborted else "✅ Campaign completed."
+    status = "\u274c Campaign aborted by user." if aborted else "✅ Campaign completed."
 
     failed_list = ""
     if failed_recipients:
@@ -108,29 +103,18 @@ def send_summary_email(total, success, failure, aborted=False, failed_recipients
     body = f"""
 {status}
 
-📊 Summary:
+\U0001f4ca Summary:
 - Mode: {mode}
 - Total intended recipients: {total}
 - Emails sent successfully: {success}
 - Failures: {failure}
 {failed_list}
 
-🕒 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+\U0001f553 Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-🚀 System: Automated Email Sender
+\U0001f680 System: Automated Email Sender
 """
 
-    # ✅ Step 1: Log to local cron_log.txt
-    log_file_path = "/home/vaidas/myProjects/email-extractor/cron_log.txt"
-    try:
-        with open(log_file_path, "a") as log_file:
-            log_file.write(body)
-            log_file.write("\n" + "=" * 50 + "\n")
-        print("📝 Summary logged to cron_log.txt successfully!")
-    except Exception as e:
-        print(f"Failed to write summary to log file: {e}")
-
-    # ✅ Step 2: Send summary email
     msg = MIMEMultipart()
     msg["From"] = EMAIL_ACCOUNT
     msg["To"] = REPORT_RECIPIENT
@@ -142,11 +126,17 @@ def send_summary_email(total, success, failure, aborted=False, failed_recipients
             server.starttls()
             server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
             server.send_message(msg)
-
-        print("📩 Summary email sent to you successfully!")
-
+        print("\U0001f4e9 Summary email sent to you successfully!")
     except Exception as e:
         print(f"Failed to send summary email: {e}")
+
+    try:
+        with open("cron_log.txt", "a") as log_file:
+            log_file.write(body)
+            log_file.write("\n" + "=" * 50 + "\n")
+        print("\U0001f4dd Summary logged to cron_log.txt successfully!")
+    except Exception as e:
+        print(f"Failed to write summary to log file: {e}")
 
 
 def main():
@@ -168,38 +158,29 @@ def main():
         )
         return
 
-    # Dry-run: Test mode
     if TEST_MODE:
-        print("🚧 TEST MODE: These recipients would receive the email:")
+        print("\U0001f6a7 TEST MODE: These recipients would receive the email:")
         for recipient in recipients:
             print(f"- {recipient}")
         print(f"Total: {total_recipients} emails would be sent.")
-        send_summary_email(
-            total_recipients,
-            success_count,
-            failure_count,
-            failed_recipients=failed_recipients,
+    else:
+        confirmation = (
+            input(
+                f"⚠️ You are about to send emails to {total_recipients} real recipients. Are you sure? (yes/no): "
+            )
+            .strip()
+            .lower()
         )
-        return
-
-    # Production mode confirmation
-    confirmation = (
-        input(
-            f"⚠️ You are about to send emails to {total_recipients} real recipients. Are you sure? (yes/no): "
-        )
-        .strip()
-        .lower()
-    )
-    if confirmation != "yes":
-        print("🚫 Sending aborted by user.")
-        send_summary_email(
-            total_recipients,
-            success_count,
-            failure_count,
-            aborted=True,
-            failed_recipients=failed_recipients,
-        )
-        return
+        if confirmation != "yes":
+            print("\u274c Sending aborted by user.")
+            send_summary_email(
+                total_recipients,
+                success_count,
+                failure_count,
+                aborted=True,
+                failed_recipients=failed_recipients,
+            )
+            return
 
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
@@ -208,7 +189,7 @@ def main():
 
             for recipient in recipients:
                 try:
-                    print(f"📩 Sending promotional email to: {recipient}")
+                    print(f"\U0001f4e9 Sending promotional email to: {recipient}")
                     send_email(recipient, server)
                     success_count += 1
                 except Exception as e:
@@ -223,7 +204,6 @@ def main():
         failure_count = total_recipients
         failed_recipients = recipients
 
-    # Always send summary email
     send_summary_email(
         total_recipients,
         success_count,
