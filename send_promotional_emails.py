@@ -78,7 +78,7 @@ def send_email(recipient, smtp_server):
         msg = MIMEMultipart("alternative")
         msg["From"] = EMAIL_ACCOUNT
         msg["To"] = recipient
-        msg["Subject"] = "\U0001f389 Monthly Special Offer Just for You!"
+        msg["Subject"] = "\U0001f389 Special Offer Just for You!"
 
         msg.attach(MIMEText(html_content, "html"))
 
