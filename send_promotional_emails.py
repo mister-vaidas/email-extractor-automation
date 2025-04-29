@@ -94,7 +94,7 @@ def send_email(recipient, smtp_server):
         unsubscribe_link = f"http://35.176.53.188:5000/unsubscribe?email={recipient}"
         html_content = EMAIL_TEMPLATE.replace(
             "{{ unsubscribe_link }}", unsubscribe_link
-        ).replace("{{ offer_link }}", OFFER_LINK)
+        )
 
         msg = MIMEMultipart("alternative")
         msg["From"] = EMAIL_ACCOUNT
