@@ -29,9 +29,6 @@ REPORT_RECIPIENT = os.getenv("REPORT_RECIPIENT")
 TEST_MODE = os.getenv("TEST_MODE", "FALSE").upper() == "TRUE"
 TEST_EMAILS = os.getenv("TEST_EMAIL", "").split(",")
 
-# Offer link (customize per campaign)
-OFFER_LINK = "https://yourwebsite.com/special-offer"
-
 # Load email template
 with open("email_template.html", "r") as file:
     EMAIL_TEMPLATE = file.read()
@@ -181,31 +178,24 @@ def main():
         for recipient in recipients:
             print(f"- {recipient}")
         print(f"Total: {total_recipients} emails would be sent.")
-        send_summary_email(
-            total_recipients,
-            success_count,
-            failure_count,
-            failed_recipients=failed_recipients,
+    else:
+        confirmation = (
+            input(
+                f"⚠️ You are about to send emails to {total_recipients} real recipients. Are you sure? (yes/no): "
+            )
+            .strip()
+            .lower()
         )
-        return
-
-    confirmation = (
-        input(
-            f"⚠️ You are about to send emails to {total_recipients} real recipients. Confirm (yes/no): "
-        )
-        .strip()
-        .lower()
-    )
-    if confirmation != "yes":
-        print("🚫 Sending aborted by user.")
-        send_summary_email(
-            total_recipients,
-            success_count,
-            failure_count,
-            aborted=True,
-            failed_recipients=failed_recipients,
-        )
-        return
+        if confirmation != "yes":
+            print("🚫 Sending aborted by user.")
+            send_summary_email(
+                total_recipients,
+                success_count,
+                failure_count,
+                aborted=True,
+                failed_recipients=failed_recipients,
+            )
+            return
 
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
