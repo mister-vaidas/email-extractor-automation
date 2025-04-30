@@ -43,10 +43,14 @@ def fetch_recipient_emails():
         )
         cursor = conn.cursor()
 
-        # ✅ Fetch only from personal_emails table
         query = """
         SELECT email FROM personal_emails
-        WHERE email NOT IN (SELECT email FROM unsubscribe_emails);
+        WHERE email NOT IN (
+            SELECT email FROM unsubscribe_emails
+            UNION
+            SELECT email FROM sent_emails
+        )
+        LIMIT 300;
         """
         cursor.execute(query)
         results = cursor.fetchall()
