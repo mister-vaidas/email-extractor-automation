@@ -209,6 +209,8 @@ def main():
             server.starttls()
             server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
 
+            max_emails = min(len(recipients), DAILY_LIMIT)
+
             for idx, recipient in enumerate(recipients, 1):
                 if idx > DAILY_LIMIT:
                     break
@@ -217,11 +219,13 @@ def main():
                     send_email(recipient, server)
                     log_sent_email(recipient)
                     success_count += 1
-                    time.sleep(DELAY_BETWEEN_EMAILS)
                 except Exception as e:
                     print(e)
                     failure_count += 1
                     failed_recipients.append(recipient)
+
+                if idx < max_emails:
+                    time.sleep(DELAY_BETWEEN_EMAILS)
 
         print(f"✅ Campaign completed: {success_count} sent, {failure_count} failed.")
 
