@@ -205,27 +205,31 @@ def main():
             return
 
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.starttls()
-            server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+        max_emails = min(len(recipients), DAILY_LIMIT)
 
-            max_emails = min(len(recipients), DAILY_LIMIT)
+        for idx, recipient in enumerate(recipients, 1):
+            if idx > DAILY_LIMIT:
+                break
 
-            for idx, recipient in enumerate(recipients, 1):
-                if idx > DAILY_LIMIT:
-                    break
-                try:
-                    print(f"📩 Sending promotional email to: {recipient}")
+            try:
+                print(f"📩 Sending promotional email to: {recipient}")
+
+                # Open a fresh connection for each email to avoid timeouts
+                with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                    server.starttls()
+                    server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+
                     send_email(recipient, server)
-                    log_sent_email(recipient)
-                    success_count += 1
-                except Exception as e:
-                    print(e)
-                    failure_count += 1
-                    failed_recipients.append(recipient)
 
-                if idx < max_emails:
-                    time.sleep(DELAY_BETWEEN_EMAILS)
+                log_sent_email(recipient)
+                success_count += 1
+            except Exception as e:
+                print(e)
+                failure_count += 1
+                failed_recipients.append(recipient)
+
+            if idx < max_emails:
+                time.sleep(DELAY_BETWEEN_EMAILS)
 
         print(f"✅ Campaign completed: {success_count} sent, {failure_count} failed.")
 
