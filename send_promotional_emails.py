@@ -27,8 +27,13 @@ REPORT_RECIPIENT = os.getenv("REPORT_RECIPIENT")
 TEST_MODE = os.getenv("TEST_MODE", "FALSE").upper() == "TRUE"
 TEST_EMAIL = os.getenv("TEST_EMAIL")
 
-# Load email template
-with open("email_template.html", "r") as file:
+# Campaign configuration
+DAILY_LIMIT = 290
+DELAY_BETWEEN_EMAILS = 30  # seconds (2 emails per minute)
+DAY_INTERVAL = 24 * 60 * 60  # seconds in a day
+
+# Load email template for the sauna refurbishment campaign
+with open("email_template_sauna.html", "r") as file:
     EMAIL_TEMPLATE = file.read()
 
 
@@ -50,9 +55,9 @@ def fetch_recipient_emails():
             UNION
             SELECT email FROM sent_emails
         )
-        LIMIT 300;
+        LIMIT %s;
         """
-        cursor.execute(query)
+        cursor.execute(query, (DAILY_LIMIT,))
         results = cursor.fetchall()
 
         cursor.close()
@@ -78,7 +83,7 @@ def send_email(recipient, smtp_server):
         msg = MIMEMultipart("alternative")
         msg["From"] = EMAIL_ACCOUNT
         msg["To"] = recipient
-        msg["Subject"] = "🎉 Special Offer Just for You!"
+        msg["Subject"] = "🔥 Give Your Sauna a Refresh!"
 
         msg.attach(MIMEText(html_content, "html"))
 
@@ -87,6 +92,23 @@ def send_email(recipient, smtp_server):
 
     except Exception as e:
         raise Exception(f"Failed to send email to {recipient}: {e}")
+
+
+def log_sent_email(recipient):
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASS
+        )
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO sent_emails (email, sent_at) VALUES (%s, NOW()) ON CONFLICT (email) DO NOTHING;",
+            (recipient.lower(),),
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Failed to log sent email for {recipient}: {e}")
 
 
 def send_summary_email(total, success, failure, aborted=False, failed_recipients=None):
@@ -187,12 +209,15 @@ def main():
             server.starttls()
             server.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
 
-            for recipient in recipients:
+            for idx, recipient in enumerate(recipients, 1):
+                if idx > DAILY_LIMIT:
+                    break
                 try:
                     print(f"📩 Sending promotional email to: {recipient}")
                     send_email(recipient, server)
+                    log_sent_email(recipient)
                     success_count += 1
-                    time.sleep(2)  # ⏳ Add 2 seconds delay between emails
+                    time.sleep(DELAY_BETWEEN_EMAILS)
                 except Exception as e:
                     print(e)
                     failure_count += 1
@@ -214,4 +239,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        main()
+        print("🌙 Sleeping for 24 hours before next campaign...")
+        time.sleep(DAY_INTERVAL)
