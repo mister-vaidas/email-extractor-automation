@@ -28,8 +28,8 @@ TEST_MODE = os.getenv("TEST_MODE", "FALSE").upper() == "TRUE"
 TEST_EMAIL = os.getenv("TEST_EMAIL")
 
 # Campaign configuration
-DAILY_LIMIT = 290
-DELAY_BETWEEN_EMAILS = 30  # seconds (2 emails per minute)
+DAILY_LIMIT = 400
+DELAY_BETWEEN_EMAILS = 12  # seconds (5 emails per minute)
 DAY_INTERVAL = 24 * 60 * 60  # seconds in a day
 
 # Load email template for the sauna refurbishment campaign
